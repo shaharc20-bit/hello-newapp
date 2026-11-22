@@ -26,4 +26,4 @@ serviceMonitor:
   path: "/metrics"
 
 dashboard:
-  enabled: true
+  enabled: false
