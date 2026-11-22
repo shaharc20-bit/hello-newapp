@@ -18,9 +18,12 @@ pod:
   port: 80
 
 serviceMonitor:
-  enabled: false
+  enabled: true
   labels:
     release: prometheus
     app: monitoring
   interval: "30s"
   path: "/metrics"
+
+dashboard:
+  enabled: true
