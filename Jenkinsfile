@@ -109,9 +109,10 @@ podTemplate(containers: [
                     set -e
                     cd gitops
                     git pull --rebase origin main
-                    mkdir -p dashboard
-                    cp "${env.WORKSPACE}/chart/dashboards/${appname}.json" "dashboard/${user}-${appname}.json"
-                    git add dashboard
+                    git rm -q --ignore-unmatch "dashboard/${user}-${appname}.json"
+                    mkdir -p dashboards
+                    cp "${env.WORKSPACE}/chart/dashboards/${appname}.json" "dashboards/${user}-${appname}.json"
+                    git add dashboards
                     if git diff --cached --quiet; then
                         echo "Dashboard unchanged - nothing to commit"
                         exit 0
