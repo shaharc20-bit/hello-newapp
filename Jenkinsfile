@@ -104,9 +104,27 @@ podTemplate(containers: [
 
         stage('add-dashboard') {
             container('deployer') {
-                sh """
-                    echo " TBD: Add dashboard to grafana"
+                withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                sh """#!/bin/sh
+                    set -e
+                    cd gitops
+                    git pull --rebase origin main
+                    mkdir -p dashboard
+                    cp "${env.WORKSPACE}/chart/dashboards/${appname}.json" "dashboard/${user}-${appname}.json"
+                    git add dashboard
+                    if git diff --cached --quiet; then
+                        echo "Dashboard unchanged - nothing to commit"
+                        exit 0
+                    fi
+                    git commit -m "Add dashboard ${appname} (${department}) by ${user}"
+                    for i in 1 2 3; do
+                        git push origin HEAD:main && exit 0
+                        sleep 3
+                        git pull --rebase origin main
+                    done
+                    echo "git push of the dashboard failed"; exit 1
                 """
+                }
             }
         }
     }
