@@ -53,8 +53,8 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{namespace=\"legal\",service=\"paymentgateway\"}[1m])) by (endpoint)",
-          "legendFormat": "{{ endpoint }}",
+          "expr": "sum(rate(http_requests_total{namespace=\"legal\",service=\"paymentgateway\"}[1m])) by (exported_endpoint)",
+          "legendFormat": "{{ exported_endpoint }}",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -420,7 +420,7 @@
       "targets": [
         {
           "expr": "rate(request_latency_seconds_sum{namespace=\"legal\",service=\"paymentgateway\"}[1m]) / rate(request_latency_seconds_count{namespace=\"legal\",service=\"paymentgateway\"}[1m])",
-          "legendFormat": "{{ endpoint }}",
+          "legendFormat": "{{ exported_endpoint }}",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -454,5 +454,5 @@
   "timezone": "browser",
   "title": "PaymentGateway (legal)",
   "uid": "paymentgateway-legal",
-  "version": 1
+  "version": 2
 }
