@@ -12,10 +12,10 @@ import threading
 app = Flask(__name__)
 
 APP_INFO = {
-    "git_repo": "https://github.com/elevy99927/hello-newapp/tree/argo-solution",
-    "git_ops": "https://github.com/elevy99927/argo-demo-repo/tree/application",
-    "author": "Eyal Levy",
-    "email": "eyal@levys.co.il",
+    "git_repo": "https://github.com/shaharc20-bit/hello-newapp",
+    "git_ops": "https://github.com/elevy99927-demos/gitops/tree/main/systems/legal",
+    "author": "Shahar - PaymentGateway (legal)",
+    "email": "",
 }
 
 

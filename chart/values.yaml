@@ -10,8 +10,8 @@ service_type: NodePort
 replicas: 1
 
 image:
-  repository: 
-  tag: "red"
+  repository: shaharc20/paymentgateway
+  tag: "latest"
 
 pod:
   target_port: 8000

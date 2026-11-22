@@ -5,15 +5,20 @@
 
 
 
-def user        = "elevy99927"              // your name: Docker Hub user AND gitops file name
-def appname     = "helloworld"
+def user        = "shaharc20"               // your name: Docker Hub user AND gitops file name
+def appname     = "paymentgateway"
 def appimage    = "${user}/${appname}"      // docker.io/<user>/helloworld
 def apptag      = "${env.BUILD_NUMBER}"
-def envName     = "dev"
-def department  = "devops"
+def envName     = params.ENV ?: "dev"
+def department  = "legal"
 
 def gitopsRepo  = "github.com/elevy99927-demos/gitops.git"
 def gitopsFile  = "systems/${department}/${envName}/${user}.yaml"
+properties([
+    parameters([
+        choice(name: 'ENV', choices: ['dev', 'qa', 'prd'], description: 'systems/legal/<ENV>/')
+    ])
+])
 
 podTemplate(containers: [
       containerTemplate(name: 'jnlp', image: 'jenkins/inbound-agent', ttyEnabled: true),
@@ -29,7 +34,6 @@ podTemplate(containers: [
     node(POD_LABEL) {
         stage('checkout') {
             container('jnlp') {
-                sh '/usr/bin/git config --global http.sslVerify false'
                 checkout scm
             }
         }
@@ -38,7 +42,7 @@ podTemplate(containers: [
             container('docker') {
                 // wait for dockerd (started by the dind container) to accept connections
                 sh '''
-                    for i in $(seq 1 3); do docker info >/dev/null 2>&1 && exit 0; sleep 2; done
+                    for i in $(seq 1 30); do docker info >/dev/null 2>&1 && exit 0; sleep 2; done
                     echo "docker daemon did not start"; docker info; exit 1
                 '''
                 echo "Building ${appimage}:${apptag}"
@@ -49,11 +53,10 @@ podTemplate(containers: [
 
         stage('push') {
             container('docker') {
-                // TAGS: <BUILD_NUMBER> (immutable, deployed by GitOps) and latest
-                withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_TOKEN')]) {
+                     withCredentials([string(credentialsId: 'docker-creds', variable: 'DOCKER_TOKEN')]) {
                     sh """
                         set -e
-                        echo "\$DOCKER_TOKEN" | docker login -u "\$DOCKER_USER" --password-stdin
+                        echo "\$DOCKER_TOKEN" | docker login -u ${user} --password-stdin
                         docker push ${appimage}:${apptag}
                         docker push ${appimage}:latest
                         docker logout
@@ -64,19 +67,18 @@ podTemplate(containers: [
 
         stage('deploy') {
             container('deployer') {
-                echo "Rendering chart into ${gitopsRepo} -> ${gitopsFile}"
-                withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
-                sh """#!/bin/sh
-                    set -e
+            withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+            sh """#!/bin/sh
+                set -e
                     command -v git >/dev/null || apk add --no-cache git
 
                     rm -rf gitops
                     git clone https://\${GIT_USER}:\${GIT_TOKEN}@${gitopsRepo} gitops
                     cd gitops
                     git config user.name  "Jenkins (${user})"
-                    git config user.email "elevy99927-demos@users.noreply.github.com"
+                    git config user.email "shaharc20-bit@users.noreply.github.com"
 
-                    helm template ${user} "${env.WORKSPACE}/chart" \\
+                    helm template ${appname} "${env.WORKSPACE}/chart" \\
                         --set image.repository=${appimage} \\
                         --set image.tag=${apptag} \\
                         > ${gitopsFile}
@@ -88,8 +90,14 @@ podTemplate(containers: [
                     fi
                     git commit -m "Deploy ${appimage}:${apptag} to ${department}/${envName} (build ${env.BUILD_NUMBER}) \n Commited by ${user}"
 
-                    git push origin HEAD:main
-                """
+                                    for i in 1 2 3; do
+                        git push origin HEAD:main && exit 0
+                        echo "push rejected - rebasing (attempt \$i)"
+                        sleep 3
+                        git pull --rebase origin main
+                    done
+                    echo "git push failed"; exit 1
+                    """
                 }
             }
         }
